@@ -2,6 +2,7 @@ fastapi
 uvicorn
 groq
 huggingface_hub
-gtts
+edge-tts
 moviepy
 python-multipart
+python-dotenv
