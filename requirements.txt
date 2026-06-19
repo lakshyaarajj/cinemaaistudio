@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+groq
+huggingface_hub
+gtts
+moviepy
+python-multipart
