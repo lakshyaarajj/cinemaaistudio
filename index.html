@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CineAI Studio — Turn a story into a short film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FAF8F3;
+    --ink: #232017;
+    --ink-soft: #6B6558;
+    --ink-faint: #A8A293;
+    --line: #E4DFD3;
+    --amber: #854F0B;
+    --amber-bg: #FAEEDA;
+    --amber-bright: #BA7517;
+    --white: #FFFFFF;
+    --error: #993C1D;
+    --error-bg: #FAECE7;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 5rem;
+  }
+
+  header {
+    margin-bottom: 3rem;
+  }
+
+  .eyebrow {
+    font-size: 13px;
+    color: var(--amber);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 34px;
+    line-height: 1.25;
+    color: var(--ink);
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    font-size: 16px;
+    color: var(--ink-soft);
+    max-width: 480px;
+  }
+
+  /* --- form --- */
+
+  .panel {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.75rem;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 0.5rem;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 110px;
+    resize: vertical;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.75rem 0.9rem;
+    background: var(--paper);
+  }
+
+  textarea:focus, select:focus, input:focus {
+    outline: none;
+    border-color: var(--amber-bright);
+  }
+
+  .row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  select {
+    flex: 1;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    background: var(--white);
+  }
+
+  .btn {
+    flex-shrink: 0;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.4rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .server-note {
+    margin-top: 1rem;
+    font-size: 13px;
+    color: var(--ink-faint);
+    border-top: 1px solid var(--line);
+    padding-top: 1rem;
+  }
+
+  .server-note a { color: var(--amber); text-decoration: none; border-bottom: 1px solid var(--amber-bg); }
+  .server-note a:hover { border-color: var(--amber); }
+
+  /* --- progress --- */
+
+  .progress-panel {
+    margin-top: 1.5rem;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.75rem;
+    display: none;
+  }
+
+  .progress-panel.show { display: block; }
+
+  .stage-title {
+    font-family: 'Lora', serif;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+  }
+
+  .stages {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .stage {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 14px;
+    color: var(--ink-faint);
+  }
+
+  .stage.active { color: var(--ink); font-weight: 500; }
+  .stage.done { color: var(--ink-soft); }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--line);
+    flex-shrink: 0;
+  }
+
+  .stage.active .dot {
+    background: var(--amber-bright);
+    box-shadow: 0 0 0 3px var(--amber-bg);
+  }
+
+  .stage.done .dot { background: var(--ink-soft); }
+
+  .detail-line {
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
+
+  /* --- result --- */
+
+  .result-panel {
+    margin-top: 1.5rem;
+    display: none;
+  }
+
+  .result-panel.show { display: block; }
+
+  video {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #000;
+    display: block;
+  }
+
+  .result-meta {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .result-title {
+    font-family: 'Lora', serif;
+    font-size: 19px;
+    font-weight: 600;
+  }
+
+  .result-actions a {
+    font-size: 13px;
+    color: var(--amber);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .scene-list {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .scene-row {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.85rem 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .scene-num {
+    font-family: 'Lora', serif;
+    font-size: 13px;
+    color: var(--ink-faint);
+    flex-shrink: 0;
+    width: 20px;
+  }
+
+  .scene-text .scene-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+  }
+
+  .scene-text .scene-desc {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+
+  /* --- error --- */
+
+  .error-panel {
+    margin-top: 1.5rem;
+    background: var(--error-bg);
+    border: 1px solid #F0997B;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    display: none;
+  }
+
+  .error-panel.show { display: block; }
+
+  .error-panel p { font-size: 14px; color: var(--error); }
+
+  footer {
+    margin-top: 4rem;
+    font-size: 13px;
+    color: var(--ink-faint);
+    border-top: 1px solid var(--line);
+    padding-top: 1.5rem;
+  }
+
+  @media (max-width: 480px) {
+    h1 { font-size: 28px; }
+    .row { flex-direction: column; }
+    .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Story to short film</div>
+    <h1>Write a one-line story.<br>Get back a short film.</h1>
+    <p class="sub">CineAI Studio turns a sentence into a structured screenplay, then generates the images, narration, and final cut automatically.</p>
+  </header>
+
+  <div class="panel" id="url-panel">
+    <label for="api-url">Backend address</label>
+    <div class="row" style="margin-top: 0;">
+      <input type="text" id="api-url" placeholder="https://your-ngrok-url.ngrok-free.dev" style="flex:1; font-family:'Inter',sans-serif; font-size:14px; color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:0.6rem 0.75rem; background:var(--paper);">
+      <button class="btn" id="save-url-btn">Connect</button>
+    </div>
+    <div class="server-note" style="margin-top: 0.75rem; padding-top: 0; border-top: none;">
+      Paste the address shown by the creator's local server. It's remembered in this browser, so this is a one-time step per device.
+    </div>
+    <div class="server-note" id="connection-status" style="display:none;"></div>
+  </div>
+
+  <div class="panel" id="form-panel" style="display:none; margin-top: 1.5rem;">
+    <label for="story">Your story idea</label>
+    <textarea id="story" placeholder="A lighthouse keeper finds a message in a bottle from the future..."></textarea>
+
+    <div class="row">
+      <select id="genre">
+        <option value="drama">Drama</option>
+        <option value="thriller">Thriller</option>
+        <option value="sci-fi">Sci-fi</option>
+        <option value="action">Action</option>
+        <option value="romance">Romance</option>
+      </select>
+      <button class="btn" id="generate-btn">Generate film</button>
+    </div>
+
+    <div class="server-note" id="server-note">
+      Connected to <span id="connected-url-display" style="font-weight:600;"></span> — <a href="#" id="change-url-link">change backend</a>
+    </div>
+  </div>
+
+  <div class="progress-panel" id="progress-panel">
+    <div class="stage-title" id="progress-title">Working on it</div>
+    <div class="stages">
+      <div class="stage" data-stage="analyzing"><div class="dot"></div>Reading your story and writing scenes</div>
+      <div class="stage" data-stage="generating_assets"><div class="dot"></div>Generating images and narration</div>
+      <div class="stage" data-stage="assembling"><div class="dot"></div>Cutting the final film</div>
+    </div>
+    <div class="detail-line" id="detail-line">Starting up...</div>
+  </div>
+
+  <div class="error-panel" id="error-panel">
+    <p id="error-text"></p>
+  </div>
+
+  <div class="result-panel" id="result-panel">
+    <video id="result-video" controls></video>
+    <div class="result-meta">
+      <div class="result-title" id="result-title"></div>
+      <div class="result-actions"><a id="result-download" href="#" download>Download ↓</a></div>
+    </div>
+    <div class="scene-list" id="scene-list"></div>
+  </div>
+
+  <footer>
+    Built with Groq, Hugging Face FLUX, and Edge TTS — a portfolio project exploring multi-modal AI pipelines.
+  </footer>
+
+</div>
+
+<script>
+  let API_BASE = localStorage.getItem('cineai_api_base') || '';
+
+  const urlPanel = document.getElementById('url-panel');
+  const apiUrlInput = document.getElementById('api-url');
+  const saveUrlBtn = document.getElementById('save-url-btn');
+  const connectionStatus = document.getElementById('connection-status');
+  const changeUrlLink = document.getElementById('change-url-link');
+  const connectedUrlDisplay = document.getElementById('connected-url-display');
+
+  const storyInput = document.getElementById('story');
+  const genreSelect = document.getElementById('genre');
+  const generateBtn = document.getElementById('generate-btn');
+  const formPanel = document.getElementById('form-panel');
+  const progressPanel = document.getElementById('progress-panel');
+  const progressTitle = document.getElementById('progress-title');
+  const detailLine = document.getElementById('detail-line');
+  const errorPanel = document.getElementById('error-panel');
+  const errorText = document.getElementById('error-text');
+  const resultPanel = document.getElementById('result-panel');
+  const resultVideo = document.getElementById('result-video');
+  const resultTitle = document.getElementById('result-title');
+  const resultDownload = document.getElementById('result-download');
+  const sceneList = document.getElementById('scene-list');
+
+  let pollTimer = null;
+
+  function showConnectionStatus(message, isError) {
+    connectionStatus.style.display = 'block';
+    connectionStatus.textContent = message;
+    connectionStatus.style.color = isError ? 'var(--error)' : 'var(--ink-faint)';
+  }
+
+  async function testConnection(url) {
+    showConnectionStatus('Checking...', false);
+    try {
+      const res = await fetch(url.replace(/\/$/, ''), {
+        method: 'GET',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      if (!res.ok) throw new Error('bad response');
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  async function connectToBackend(url) {
+    url = url.trim().replace(/\/$/, '');
+    if (!url) return;
+
+    saveUrlBtn.disabled = true;
+    saveUrlBtn.textContent = 'Checking...';
+
+    const ok = await testConnection(url);
+
+    saveUrlBtn.disabled = false;
+    saveUrlBtn.textContent = 'Connect';
+
+    if (!ok) {
+      showConnectionStatus("Couldn't reach that address. Double check it's correct and the backend is running.", true);
+      return;
+    }
+
+    API_BASE = url;
+    localStorage.setItem('cineai_api_base', url);
+    connectedUrlDisplay.textContent = url.replace(/^https?:\/\//, '');
+    urlPanel.style.display = 'none';
+    formPanel.style.display = 'block';
+  }
+
+  // on load, if we have a saved URL, verify it still works
+  (async function init() {
+    if (API_BASE) {
+      apiUrlInput.value = API_BASE;
+      const ok = await testConnection(API_BASE);
+      if (ok) {
+        connectedUrlDisplay.textContent = API_BASE.replace(/^https?:\/\//, '');
+        urlPanel.style.display = 'none';
+        formPanel.style.display = 'block';
+      } else {
+        showConnectionStatus('Saved backend is offline right now. Enter the current address below.', true);
+      }
+    }
+  })();
+
+  saveUrlBtn.addEventListener('click', () => connectToBackend(apiUrlInput.value));
+  apiUrlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') connectToBackend(apiUrlInput.value);
+  });
+  changeUrlLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    formPanel.style.display = 'none';
+    urlPanel.style.display = 'block';
+  });
+
+  function setStage(stageName) {
+    document.querySelectorAll('.stage').forEach(el => {
+      el.classList.remove('active', 'done');
+    });
+    const order = ['analyzing', 'generating_assets', 'assembling', 'done'];
+    const idx = order.indexOf(stageName);
+    order.forEach((name, i) => {
+      const el = document.querySelector(`.stage[data-stage="${name}"]`);
+      if (!el) return;
+      if (i < idx) el.classList.add('done');
+      if (i === idx) el.classList.add('active');
+    });
+  }
+
+  function resetUI() {
+    errorPanel.classList.remove('show');
+    resultPanel.classList.remove('show');
+    progressPanel.classList.remove('show');
+    if (pollTimer) clearInterval(pollTimer);
+  }
+
+  function showError(message) {
+    progressPanel.classList.remove('show');
+    errorText.textContent = message;
+    errorPanel.classList.add('show');
+    generateBtn.disabled = false;
+    generateBtn.textContent = 'Generate film';
+  }
+
+  async function generate() {
+    const story = storyInput.value.trim();
+    if (!story) {
+      storyInput.focus();
+      return;
+    }
+
+    resetUI();
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Starting...';
+    progressPanel.classList.add('show');
+    progressTitle.textContent = 'Working on it';
+    detailLine.textContent = 'Sending your story to the pipeline...';
+    setStage('analyzing');
+
+    try {
+      const res = await fetch(`${API_BASE}/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({ story, genre: genreSelect.value })
+      });
+
+      if (!res.ok) throw new Error('The backend did not accept this request.');
+
+      const data = await res.json();
+      const jobId = data.job_id;
+      generateBtn.textContent = 'Generating...';
+      pollStatus(jobId);
+
+    } catch (err) {
+      showError("Couldn't reach the backend. It may be offline right now — this demo runs on the creator's own machine rather than a cloud server.");
+    }
+  }
+
+  function pollStatus(jobId) {
+    pollTimer = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/status/${jobId}`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        const data = await res.json();
+
+        if (data.status === 'error') {
+          clearInterval(pollTimer);
+          showError('Something went wrong while generating this film. Try a different story idea.');
+          return;
+        }
+
+        if (data.status === 'done') {
+          clearInterval(pollTimer);
+          showResult(data);
+          return;
+        }
+
+        setStage(data.status);
+        detailLine.textContent = data.progress
+          ? `${data.title ? data.title + ' — ' : ''}${data.progress}`
+          : 'Working on it...';
+
+      } catch (err) {
+        clearInterval(pollTimer);
+        showError('Lost connection to the backend partway through. Try again.');
+      }
+    }, 4000);
+  }
+
+  function showResult(data) {
+    progressPanel.classList.remove('show');
+    generateBtn.disabled = false;
+    generateBtn.textContent = 'Generate film';
+
+    const videoUrl = `${API_BASE}${data.movie_url}`;
+    resultVideo.src = videoUrl;
+    resultTitle.textContent = data.title || 'Your film';
+    resultDownload.href = videoUrl;
+
+    sceneList.innerHTML = '';
+    (data.scenes || []).forEach((scene, i) => {
+      const row = document.createElement('div');
+      row.className = 'scene-row';
+      row.innerHTML = `
+        <div class="scene-num">${String(i + 1).padStart(2, '0')}</div>
+        <div class="scene-text">
+          <div class="scene-title">${scene.title || ''}</div>
+          <div class="scene-desc">${scene.description || ''}</div>
+        </div>`;
+      sceneList.appendChild(row);
+    });
+
+    resultPanel.classList.add('show');
+  }
+
+  generateBtn.addEventListener('click', generate);
+  storyInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.metaKey) generate();
+  });
+</script>
+
+</body>
+</html>
